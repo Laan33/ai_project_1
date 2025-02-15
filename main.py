@@ -6,7 +6,7 @@ from itertools import permutations
 
 # Constants
 GENOME_SIZE = 52  # Number of cities
-GENERATIONS = 600 # Number of generations to run the algorithm
+GENERATIONS = 700 # Number of generations to run the algorithm
 
 # POPULATION_SIZE = 400 # Number of individuals in the population
 # MUTATION_RATE = 0.05 # Chance of mutation per gene
@@ -17,7 +17,7 @@ GENERATIONS = 600 # Number of generations to run the algorithm
 # CROSSOVER_RATES = [0.7, 0.8, 0.9]
 # POPULATION_SIZES = [100, 200, 350]
 MUTATION_RATES = [0.01,]
-CROSSOVER_RATES = [0.7]
+CROSSOVER_RATES = [0.8]
 POPULATION_SIZES = [350]
 
 
@@ -121,19 +121,21 @@ def fitness(genome, distance_matrix):
         total_distance += distance_matrix[genome[i - 1]][genome[i]]
     return total_distance  # Positive because we want to minimise distance
 
-# Selection mechanism: roulette wheel selection
-def roulette_select_parent(population, fitnesses):
-    min_fitness = min(fitnesses)
-    adjusted_fitnesses = [f - min_fitness for f in fitnesses]  # Adjust fitness values
-    total_fitness = sum(adjusted_fitnesses)
-    pick = random.uniform(0, total_fitness)
-    cumulative_fitness = 0
-    for individual, adjusted_fitness in zip(population, adjusted_fitnesses):
-        cumulative_fitness += adjusted_fitness
-        if cumulative_fitness >= pick:
-            return individual
-    return population[-1]
+# Rank selection -
+def rank_selection(population, fitnesses):
+    sorted_population = sorted(zip(population, fitnesses), key=lambda x: x[1], reverse=True)
+    ranks = list(range(len(population), 0, -1))
+    # print("Ranks:", ranks)
+    #     # print("Sorted pop:", sorted_population)
+    total_rank = sum(ranks)
+    pick = random.uniform(0, total_rank)
+    current = 0
+    for individual, rank in zip(sorted_population, ranks):
+        current += rank
+        if current > pick:
+            return individual[0]
 
+# Tournament selection
 def tournament_selection(population, fitnesses, tournament_size=5):
     selected = random.sample(list(zip(population, fitnesses)), tournament_size)
     # Sort by fitness (lower is better)
@@ -205,8 +207,8 @@ def displacement_mutate(genome):
 
 # Genetic algorithm
 def genetic_algorithm():
+    population = init_population(POPULATION_SIZE, GENOME_SIZE)
     for generation in range(GENERATIONS):
-        population = init_population(POPULATION_SIZE, GENOME_SIZE)
         fitness_values = [fitness(genome, distance_matrix) for genome in population]
 
         # **Elitism** - Keep the top 5% of solutions
@@ -220,10 +222,11 @@ def genetic_algorithm():
         for _ in range((POPULATION_SIZE - elite_size) // 2):
             # parent1 = tournament_selection(population, fitness_values)
             # parent2 = tournament_selection(population, fitness_values)
-            parent1 = roulette_select_parent(population, fitness_values)
-            parent2 = roulette_select_parent(population, fitness_values)
+            parent1 = rank_selection(population, fitness_values)
+            parent2 = rank_selection(population, fitness_values)
             offspring1 = pmx_crossover(parent1, parent2)
             offspring2 = pmx_crossover(parent2, parent1)
+            # offspring1, offspring2 = order_crossover(parent1, parent2)
 
             new_population.extend([swap_mutate(offspring1), swap_mutate(offspring2)])
 
