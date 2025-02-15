@@ -6,22 +6,25 @@ from itertools import permutations
 
 # Constants
 GENOME_SIZE = 52  # Number of cities
-GENERATIONS = 1400 # Number of generations to run the algorithm
+GENERATIONS = 600 # Number of generations to run the algorithm
 
 # POPULATION_SIZE = 400 # Number of individuals in the population
 # MUTATION_RATE = 0.05 # Chance of mutation per gene
 # CROSSOVER_RATE = 0.88 # Chance of crossover for a pair of parents
 
 # Gridsearch for the best possible hyperparameters
-MUTATION_RATES = [0.01, 0.05, 0.12]
-CROSSOVER_RATES = [0.7, 0.8, 0.9]
-POPULATION_SIZES = [100, 200, 350]
+# MUTATION_RATES = [0.01, 0.05, 0.12]
+# CROSSOVER_RATES = [0.7, 0.8, 0.9]
+# POPULATION_SIZES = [100, 200, 350]
+MUTATION_RATES = [0.01,]
+CROSSOVER_RATES = [0.7]
+POPULATION_SIZES = [350]
 
 
 def calculate_best_path(coordinates):
     all_permutations = permutations(range(GENOME_SIZE))
     best_path = None
-    best_distance = float('inf')
+    best_possible_distance = float('inf')
     perm_count = 0
     for perm in all_permutations:
         perm_count += 1
@@ -31,13 +34,13 @@ def calculate_best_path(coordinates):
                 (coordinates[perm[i - 1]][0] - coordinates[perm[i]][0]) ** 2 +
                 (coordinates[perm[i - 1]][1] - coordinates[perm[i]][1]) ** 2
             )
-        if current_distance < best_distance:
-            best_distance = round(current_distance, 3)
+        if current_distance < best_possible_distance:
+            best_possible_distance = round(current_distance, 3)
             best_path = perm
         if perm_count % 1000 == 0:
             print(f'Current at perm count: {perm_count} permutation: {perm}, Distance: {current_distance}')
 
-    return best_path, best_distance
+    return best_path, best_possible_distance
 
 def load_distance_matrix(file_path):
     with open(file_path, 'r') as f:
@@ -116,24 +119,25 @@ def fitness(genome, distance_matrix):
     total_distance = 0
     for i in range(len(genome)):
         total_distance += distance_matrix[genome[i - 1]][genome[i]]
-    return -total_distance  # Negative because we want to minimise distance
+    return total_distance  # Positive because we want to minimise distance
 
 # Selection mechanism: roulette wheel selection
 def roulette_select_parent(population, fitnesses):
-    total_fitness = sum(fitnesses)
+    min_fitness = min(fitnesses)
+    adjusted_fitnesses = [f - min_fitness for f in fitnesses]  # Adjust fitness values
+    total_fitness = sum(adjusted_fitnesses)
     pick = random.uniform(0, total_fitness)
     cumulative_fitness = 0
-    for individual, individual_fitness in zip(population, fitnesses):
-        cumulative_fitness += individual_fitness
-        if cumulative_fitness <= pick: # Smaller or equal to pick because values are negative
+    for individual, adjusted_fitness in zip(population, adjusted_fitnesses):
+        cumulative_fitness += adjusted_fitness
+        if cumulative_fitness >= pick:
             return individual
-    print(f"Total fitness: {total_fitness}, Pick: {pick}, Cumulative fitness: {cumulative_fitness}")
-    print("Parent not found")
     return population[-1]
 
 def tournament_selection(population, fitnesses, tournament_size=5):
     selected = random.sample(list(zip(population, fitnesses)), tournament_size)
-    selected.sort(key=lambda x: x[1], reverse=True)  # Sort by fitness (higher is better)
+    # Sort by fitness (lower is better)
+    selected = sorted(selected, key=lambda x: x[1])
     return selected[0][0]  # Return best individual
 
 # Order Crossover (OX)
@@ -201,26 +205,23 @@ def displacement_mutate(genome):
 
 # Genetic algorithm
 def genetic_algorithm():
-
     for generation in range(GENERATIONS):
         population = init_population(POPULATION_SIZE, GENOME_SIZE)
-
         fitness_values = [fitness(genome, distance_matrix) for genome in population]
 
         # **Elitism** - Keep the top 5% of solutions
         elite_size = int(POPULATION_SIZE * 0.05)
-        elite_indices = np.argsort(fitness_values)[-elite_size:]  # Get top N indices
+        elite_indices = np.argsort(fitness_values)[:elite_size]  # Get top N indices
         elite = [population[i] for i in elite_indices]
 
         new_population = elite  # Keep the elites
 
         # Generate the rest of the population
         for _ in range((POPULATION_SIZE - elite_size) // 2):
-            parent1 = tournament_selection(population, fitness_values)
-            parent2 = tournament_selection(population, fitness_values)
-            # Order crossover
-            # offspring1, offspring2 = order_crossover(parent1, parent2)
-            # PMX crossover
+            # parent1 = tournament_selection(population, fitness_values)
+            # parent2 = tournament_selection(population, fitness_values)
+            parent1 = roulette_select_parent(population, fitness_values)
+            parent2 = roulette_select_parent(population, fitness_values)
             offspring1 = pmx_crossover(parent1, parent2)
             offspring2 = pmx_crossover(parent2, parent1)
 
@@ -229,13 +230,13 @@ def genetic_algorithm():
         population = new_population
         fitness_values = [fitness(genome, distance_matrix) for genome in population]
 
-    best_index = fitness_values.index(max(fitness_values))
-    best_solution = population[best_index]
-    best_fitness = round(-fitness(best_solution, distance_matrix))
+    best_index = fitness_values.index(min(fitness_values))
+    best_solution_loop = population[best_index]
+    best_fitness = round(fitness(best_solution_loop, distance_matrix))
     plot_fitness_over_generations(fitness_values)
-    print(f'Best GA Solution: {best_solution}')
+    print(f'Best GA Solution: {best_solution_loop}')
     print(f'Best GA Fitness: {best_fitness}')
-    return best_solution, best_fitness
+    return best_solution_loop, best_fitness
 
 # Plotting fitness over generations
 def plot_fitness_over_generations(fitness_val):
@@ -255,7 +256,7 @@ if __name__ == '__main__':
     best_params = None
 
     # Gridsearch for the best possible combination of hyperparameters
-    # Hypermaparameters: Population size, Mutation rate, Crossover rate
+    # Hyperparameters: Population size, Mutation rate, Crossover rate
     for POPULATION_SIZE in POPULATION_SIZES:
         for MUTATION_RATE in MUTATION_RATES:
             for CROSSOVER_RATE in CROSSOVER_RATES:
