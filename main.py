@@ -3,6 +3,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 
+NUM_CITIES = 52
+global distance_matrix
+
 
 def parse_tsplib(filename):
     with open(filename, 'r') as file:
@@ -16,22 +19,27 @@ def parse_tsplib(filename):
             dimension = int(parts[1])
         elif parts[0].isdigit():
             nodes.append((float(parts[1]), float(parts[2])))
-    return nodes
+
+    distance_matrix = np.zeros((len(nodes), len(nodes)))
+    for i in range(len(nodes)):
+        for j in range(len(nodes)):
+            distance_matrix[i, j] = euclidean_distance(nodes[i], nodes[j])
+
+    return nodes, dimension
 
 
 def euclidean_distance(a, b):
     return math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2)
 
 
-def total_distance(tour, nodes):
-    return sum(
-        euclidean_distance(nodes[tour[i]], nodes[tour[i + 1]]) for i in range(len(tour) - 1)) + euclidean_distance(
-        nodes[tour[-1]], nodes[tour[0]])
+def total_distance(tour):
+    distance = 0
+    for i in range(len(tour)):
+        distance += distance_matrix[tour[i - 1], tour[i]]
+    return distance
 
-
-def initialize_population(pop_size, num_cities):
-    return [random.sample(range(num_cities), num_cities) for _ in range(pop_size)]
-
+def initialize_population(pop_size, NUM_CITIES):
+    return [random.sample(range(NUM_CITIES), NUM_CITIES) for _ in range(pop_size)]
 
 def roulette_wheel_selection(population, fitness):
     total_fitness = sum(fitness)
@@ -83,19 +91,25 @@ def inversion_mutation(tour):
     tour[i:j] = reversed(tour[i:j])
     return tour
 
+def plot_tour(tour):
+    nodes = parse_tsplib("berlin52.txt")[0]
+    x = [nodes[i][0] for i in tour]
+    y = [nodes[i][1] for i in tour]
+    plt.plot(x, y, 'o-')
+    plt.show()
 
-def genetic_algorithm(filename, pop_size=100, generations=500, crossover_rate=0.8, mutation_rate=0.2):
-    nodes = parse_tsplib(filename)
-    num_cities = len(nodes)
-    population = initialize_population(pop_size, num_cities)
+def genetic_algorithm(pop_size=100, generations=2000, crossover_rate=0.8, mutation_rate=0.2):
+    population = initialize_population(pop_size, NUM_CITIES)
     best_fitness_over_time = []
+    best_loop_distance = float('inf')
+    best_solution = None
 
     for _ in range(generations):
-        fitness = [1 / total_distance(tour, nodes) for tour in population]
+        genome_fitness = [total_distance(genome) for genome in population]
         new_population = []
         for _ in range(pop_size // 2):
-            parent1 = tournament_selection(population, fitness)
-            parent2 = tournament_selection(population, fitness)
+            parent1 = tournament_selection(population, genome_fitness)
+            parent2 = tournament_selection(population, genome_fitness)
             if random.random() < crossover_rate:
                 child1 = ordered_crossover(parent1, parent2)
                 child2 = ordered_crossover(parent2, parent1)
@@ -107,12 +121,16 @@ def genetic_algorithm(filename, pop_size=100, generations=500, crossover_rate=0.
                 child2 = inversion_mutation(child2)
             new_population.extend([child1, child2])
         population = new_population
-        best_fitness_over_time.append(max(fitness))
+        if min(genome_fitness) < best_loop_distance:
+            best_loop_distance = min(genome_fitness)
+            best_solution = min(population, key=lambda tour: total_distance(tour))
+            plot_tour(best_solution)
+        best_fitness_over_time.append(min(genome_fitness))
 
     best_tour = min(population, key=lambda tour: total_distance(tour, nodes))
-    best_distance = total_distance(best_tour, nodes)
+    best_loop_distance = total_distance(best_tour, nodes)
     plot_fitness_over_time(best_fitness_over_time)
-    return best_tour, best_distance
+    return best_tour, best_loop_distance
 
 def plot_fitness_over_time(fitness_scores):
     plt.plot(fitness_scores)
@@ -123,6 +141,7 @@ def plot_fitness_over_time(fitness_scores):
 
 if __name__ == "__main__":
     filename = "berlin52.txt"
-    best_tour, best_distance = genetic_algorithm(filename)
+    nodes, distance_matrix = parse_tsplib(filename)
+    best_tour, best_distance = genetic_algorithm()
     print("Best Tour:", best_tour)
     print("Best Distance:", best_distance)
