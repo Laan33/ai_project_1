@@ -25,7 +25,7 @@ def parse_tsplib(filename):
         for j in range(len(nodes)):
             distance_matrix[i, j] = euclidean_distance(nodes[i], nodes[j])
 
-    return nodes, dimension
+    return nodes, distance_matrix
 
 
 def euclidean_distance(a, b):
@@ -38,7 +38,7 @@ def total_distance(tour):
         distance += distance_matrix[tour[i - 1], tour[i]]
     return distance
 
-def initialize_population(pop_size, NUM_CITIES):
+def initialize_population(pop_size):
     return [random.sample(range(NUM_CITIES), NUM_CITIES) for _ in range(pop_size)]
 
 def roulette_wheel_selection(population, fitness):
@@ -91,15 +91,17 @@ def inversion_mutation(tour):
     tour[i:j] = reversed(tour[i:j])
     return tour
 
-def plot_tour(tour):
-    nodes = parse_tsplib("berlin52.txt")[0]
+def plot_tour(tour, nodes):
     x = [nodes[i][0] for i in tour]
     y = [nodes[i][1] for i in tour]
+    # Also add the first city to the end to complete the loop
+    x.append(x[0])
+    y.append(y[0])
     plt.plot(x, y, 'o-')
     plt.show()
 
 def genetic_algorithm(pop_size=100, generations=2000, crossover_rate=0.8, mutation_rate=0.2):
-    population = initialize_population(pop_size, NUM_CITIES)
+    population = initialize_population(pop_size)
     best_fitness_over_time = []
     best_loop_distance = float('inf')
     best_solution = None
@@ -124,11 +126,11 @@ def genetic_algorithm(pop_size=100, generations=2000, crossover_rate=0.8, mutati
         if min(genome_fitness) < best_loop_distance:
             best_loop_distance = min(genome_fitness)
             best_solution = min(population, key=lambda tour: total_distance(tour))
-            plot_tour(best_solution)
+            plot_tour(best_solution, nodes)
         best_fitness_over_time.append(min(genome_fitness))
 
-    best_tour = min(population, key=lambda tour: total_distance(tour, nodes))
-    best_loop_distance = total_distance(best_tour, nodes)
+    best_tour = min(population, key=lambda tour: total_distance(tour))
+    best_loop_distance = total_distance(best_tour)
     plot_fitness_over_time(best_fitness_over_time)
     return best_tour, best_loop_distance
 
