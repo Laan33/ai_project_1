@@ -212,7 +212,7 @@ def genetic_algorithm():
         fitness_values = [fitness(genome, distance_matrix) for genome in population]
 
         # **Elitism** - Keep the top 5% of solutions
-        elite_size = int(POPULATION_SIZE * 0.05)
+        elite_size = int(POPULATION_SIZE * 0.14)
         elite_indices = np.argsort(fitness_values)[:elite_size]  # Get top N indices
         elite = [population[i] for i in elite_indices]
 
