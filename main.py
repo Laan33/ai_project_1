@@ -8,7 +8,7 @@ from itertools import permutations
 # Constants
 POPULATION_SIZE = 400 # Number of individuals in the population
 GENOME_SIZE = 52  # Number of cities
-MUTATION_RATE = 0.12 # Chance of mutation per gene
+MUTATION_RATE = 0.05 # Chance of mutation per gene
 CROSSOVER_RATE = 0.88 # Chance of crossover for a pair of parents
 GENERATIONS = 2500 # Number of generations to run the algorithm
 
@@ -114,7 +114,7 @@ def fitness(genome, distance_matrix):
     return -total_distance  # Negative because we want to minimise distance
 
 # Selection mechanism: roulette wheel selection
-def select_parent(population, fitnesses):
+def roulette_select_parent(population, fitnesses):
     total_fitness = sum(fitnesses)
     pick = random.uniform(0, total_fitness)
     cumulative_fitness = 0
@@ -132,7 +132,7 @@ def tournament_selection(population, fitnesses, tournament_size=5):
     return selected[0][0]  # Return best individual
 
 # Order Crossover (OX)
-def crossover(parent1, parent2):
+def order_crossover(parent1, parent2):
     if random.random() < CROSSOVER_RATE:
         start, end = sorted(random.sample(range(len(parent1)), 2))
         child1 = [None] * len(parent1)
@@ -147,6 +147,24 @@ def crossover(parent1, parent2):
     else:
         return parent1, parent2
 
+def pmx_crossover(parent1, parent2):
+    start, end = sorted(random.sample(range(len(parent1)), 2))
+    child = [None] * len(parent1)
+
+    # Copy the crossover segment from parent1
+    child[start:end] = parent1[start:end]
+
+    mapping = {parent1[i]: parent2[i] for i in range(start, end)}
+
+    # Fill the remaining positions
+    for i in range(len(parent1)):
+        if child[i] is None:
+            val = parent2[i]
+            while val in mapping:
+                val = mapping[val]
+            child[i] = val
+
+    return child
 
 
 def fill_child(child, parent, end):
@@ -177,21 +195,28 @@ def displacement_mutate(genome):
     return genome
 
 # Genetic algorithm
-def genetic_algorithm(distance_matrix, coordinates, best_possible_distance = None):
-    global fitness_values
+def genetic_algorithm(distance_matrix, coordinates, best_possible_distance=None):
     population = init_population(POPULATION_SIZE, GENOME_SIZE)
 
     for generation in range(GENERATIONS):
         fitness_values = [fitness(genome, distance_matrix) for genome in population]
 
-        new_population = []
-        for _ in range(POPULATION_SIZE // 2): # Half of the (not so good) population scrapped
-            # parent1 = select_parent(population, fitness_values)
-            # parent2 = select_parent(population, fitness_values)
+        # **Elitism** - Keep the top 5% of solutions
+        elite_size = int(POPULATION_SIZE * 0.05)
+        elite_indices = np.argsort(fitness_values)[-elite_size:]  # Get top N indices
+        elite = [population[i] for i in elite_indices]
+
+        new_population = elite  # Keep the elites
+
+        # Generate the rest of the population
+        for _ in range((POPULATION_SIZE - elite_size) // 2):
             parent1 = tournament_selection(population, fitness_values)
             parent2 = tournament_selection(population, fitness_values)
-
-            offspring1, offspring2 = crossover(parent1, parent2)
+            # Order crossover
+            # offspring1, offspring2 = order_crossover(parent1, parent2)
+            # PMX crossover
+            offspring1 = pmx_crossover(parent1, parent2)
+            offspring2 = pmx_crossover(parent2, parent1)
 
             new_population.extend([swap_mutate(offspring1), swap_mutate(offspring2)])
 
