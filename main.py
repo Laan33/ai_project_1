@@ -1,16 +1,21 @@
 import random
 import time
-
 import numpy as np
 import matplotlib.pyplot as plt
 from itertools import permutations
 
 # Constants
-POPULATION_SIZE = 400 # Number of individuals in the population
 GENOME_SIZE = 52  # Number of cities
-MUTATION_RATE = 0.05 # Chance of mutation per gene
-CROSSOVER_RATE = 0.88 # Chance of crossover for a pair of parents
-GENERATIONS = 2500 # Number of generations to run the algorithm
+GENERATIONS = 1400 # Number of generations to run the algorithm
+
+# POPULATION_SIZE = 400 # Number of individuals in the population
+# MUTATION_RATE = 0.05 # Chance of mutation per gene
+# CROSSOVER_RATE = 0.88 # Chance of crossover for a pair of parents
+
+# Gridsearch for the best possible hyperparameters
+MUTATION_RATES = [0.01, 0.05, 0.12]
+CROSSOVER_RATES = [0.7, 0.8, 0.9]
+POPULATION_SIZES = [100, 200, 350]
 
 
 def calculate_best_path(coordinates):
@@ -86,7 +91,7 @@ def plot_coordinates(coordinates):
     plt.plot(x, y, 'o')
     plt.show()
 
-def plot_tour(coordinates, tour, best_ga_fitness, best_possible_distance):
+def plot_tour(coordinates, tour, best_ga_fitness):
     x = [coordinates[i][0] for i in tour]
     y = [coordinates[i][1] for i in tour]
     # Also add the first city to the end to complete the tour
@@ -94,7 +99,7 @@ def plot_tour(coordinates, tour, best_ga_fitness, best_possible_distance):
     y.append(y[0])
 
     plt.plot(x, y, 'o-')
-    plt.title(f'Best GA Fitness: {best_ga_fitness}, Best Possible Distance: {best_possible_distance}')
+    plt.title(f'Best GA Fitness: {best_ga_fitness}')
     plt.show()
 
 # Initialize population with random permutations of cities
@@ -195,10 +200,11 @@ def displacement_mutate(genome):
     return genome
 
 # Genetic algorithm
-def genetic_algorithm(distance_matrix, coordinates, best_possible_distance=None):
-    population = init_population(POPULATION_SIZE, GENOME_SIZE)
+def genetic_algorithm():
 
     for generation in range(GENERATIONS):
+        population = init_population(POPULATION_SIZE, GENOME_SIZE)
+
         fitness_values = [fitness(genome, distance_matrix) for genome in population]
 
         # **Elitism** - Keep the top 5% of solutions
@@ -227,16 +233,16 @@ def genetic_algorithm(distance_matrix, coordinates, best_possible_distance=None)
     best_solution = population[best_index]
     best_fitness = round(-fitness(best_solution, distance_matrix))
     plot_fitness_over_generations(fitness_values)
-    plot_tour(coordinates, best_solution, best_fitness, best_possible_distance)
     print(f'Best GA Solution: {best_solution}')
     print(f'Best GA Fitness: {best_fitness}')
+    return best_solution, best_fitness
 
 # Plotting fitness over generations
 def plot_fitness_over_generations(fitness_val):
     plt.plot(fitness_val)
     plt.xlabel('Generation')
     plt.ylabel('Fitness')
-    plt.title('Fitness over generations')
+    plt.title('Fitness over generations\n, Pop size: {}, Mut rate: {}, Cross rate: {}'.format(POPULATION_SIZE, MUTATION_RATE, CROSSOVER_RATE))
     plt.show()
 
 if __name__ == '__main__':
@@ -244,14 +250,29 @@ if __name__ == '__main__':
     distance_matrix, coordinates = load_distance_matrix('berlin52.txt')
     # distance_matrix, coordinates = load_distance_matrix('kroA100.txt')
     # distance_matrix, coordinates = load_distance_matrix('pr1002.txt')
-    # best_possible_path, best_possible_distance = calculate_best_path(coordinates)
-    # print("Best possible path distance:", best_possible_distance)
-    # print("Best possible path:", best_possible_path)
+
+    best_solution, best_distance = float('inf'), float('inf')
+    best_params = None
+
+    # Gridsearch for the best possible combination of hyperparameters
+    # Hypermaparameters: Population size, Mutation rate, Crossover rate
+    for POPULATION_SIZE in POPULATION_SIZES:
+        for MUTATION_RATE in MUTATION_RATES:
+            for CROSSOVER_RATE in CROSSOVER_RATES:
+                print(f'Running GA with Population size: {POPULATION_SIZE}, Mutation rate: {MUTATION_RATE}, Crossover rate: {CROSSOVER_RATE}')
+                current_solution, current_distance = genetic_algorithm()
+                if current_distance < best_distance:
+                    plot_tour(coordinates, current_solution, current_distance)
+                    best_solution, best_distance = current_solution, current_distance
+                    best_params = (POPULATION_SIZE, MUTATION_RATE, CROSSOVER_RATE)
+                print('----------------------------------------------')
 
 
-    genetic_algorithm(distance_matrix, coordinates)
+    # genetic_algorithm(distance_matrix, coordinates)
     end_time = time.time()
     print("Computation time taken:", end_time - start_time, "seconds")
+    print("Best GA Solution distance: ", best_distance)
+    print("Best solution params: ", best_params)
 
 
 
