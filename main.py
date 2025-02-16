@@ -185,11 +185,12 @@ def gridsearch(generations):
     print("Best Distance:", best_ga_distance)
     return
 
-NUM_CITIES = 100
+NUM_CITIES = 1002
 
 if __name__ == "__main__":
     # filename = "berlin52.txt"
-    filename = "kroA100.txt"
+    # filename = "kroA100.txt"
+    filename = "pr1002.txt"
 
     nodes, distance_matrix = parse_tsplib(filename)
     start_time = time.time()
@@ -204,13 +205,13 @@ if __name__ == "__main__":
     plot_tour(best_tour, nodes, best_distance)
     print("Computation time taken:", end_time - start_time, "seconds")
 
-    print("\n--------------\n")
-
-    start_time = time.time()
-    best_tour, best_distance = genetic_algorithm(generations=350)
-    print("Best Tour:", best_tour)
-    print("Best Distance:", best_distance)
-
-    end_time = time.time()
-    plot_tour(best_tour, nodes, best_distance)
-    print("Computation time taken:", end_time - start_time, "seconds")
+    # print("\n--------------\n")
+    #
+    # start_time = time.time()
+    # best_tour, best_distance = genetic_algorithm(generations=350)
+    # print("Best Tour:", best_tour)
+    # print("Best Distance:", best_distance)
+    #
+    # end_time = time.time()
+    # plot_tour(best_tour, nodes, best_distance)
+    # print("Computation time taken:", end_time - start_time, "seconds")
