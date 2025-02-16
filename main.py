@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import math
 from math import isclose
 
-NUM_CITIES = 52
 global distance_matrix
 
 
@@ -15,12 +14,9 @@ def parse_tsplib(filename):
         lines = file.readlines()
 
     nodes = []
-    dimension = 0
     for line in lines:
         parts = line.strip().split()
-        if parts[0] == "DIMENSION:":
-            dimension = int(parts[1])
-        elif parts[0].isdigit():
+        if parts[0].isdigit():
             nodes.append((float(parts[1]), float(parts[2])))
 
     distance_matrix = np.zeros((len(nodes), len(nodes)))
@@ -107,7 +103,7 @@ def plot_tour(tour, nodes, best_dist, params=None):
     plt.plot(x, y, 'o-')
     plt.show()
 
-def genetic_algorithm(pop_size=100, generations=2000, crossover_rate=0.8, mutation_rate=0.2):
+def genetic_algorithm(pop_size=200, generations=500, crossover_rate=0.9, mutation_rate=0.2):
     population = initialize_population(pop_size)
     best_fitness_over_time = []
 
@@ -128,31 +124,20 @@ def genetic_algorithm(pop_size=100, generations=2000, crossover_rate=0.8, mutati
                 child2 = inversion_mutation(child2)
             new_population.extend([child1, child2])
         population = new_population
-        best_fitness = min(genome_fitness)
+        best_fitness = round(min(genome_fitness), 3)
         best_fitness_over_time.append(best_fitness)
 
         # Checking if fitness has stagnated
-        if len(best_fitness_over_time) > 90:
-            if isclose(best_fitness, best_fitness_over_time[-40], rel_tol=0.015):
+        if len(best_fitness_over_time) > 400:
+            if isclose(best_fitness, best_fitness_over_time[-60], rel_tol=0.015):
                 print(f'Stopping early at generation {generation} due to no improvement in fitness.')
                 break
-        # if all(isclose(fitness_c == best_fitness_over_time[-1], 1.5) for fitness_c in best_fitness_over_time[-10:]):
-        #     print(f'Stopping early at generation {generation} due to no improvement in fitness.')
-        #     break
-        # # Check if fitness hasn't improved over the last 100 generations
-        # if generation >= 100 and best_fitness >= min(best_fitness_over_time[-100:]):
-        #     # print("Stuck counter:", stuck_counter)
-        #     stuck_counter += 1
-        # if stuck_counter > 250:
-        #     print(f'Stopping early at generation {generation} due to no improvement in fitness.')
-        #     break
 
     best_loop_distance = min(genome_fitness)
     best_ga_tour = population[genome_fitness.index(best_loop_distance)]
 
     print(f"Best loop distance: {best_loop_distance}")
     plot_fitness_over_time(best_fitness_over_time)
-    # plot_tour(best_ga_tour, nodes, best_loop_distance)
     return best_ga_tour, best_loop_distance
 
 def plot_fitness_over_time(fitness_scores):
@@ -200,17 +185,32 @@ def gridsearch(generations):
     print("Best Distance:", best_ga_distance)
     return
 
+NUM_CITIES = 100
 
 if __name__ == "__main__":
-    filename = "berlin52.txt"
-
+    # filename = "berlin52.txt"
+    filename = "kroA100.txt"
 
     nodes, distance_matrix = parse_tsplib(filename)
     start_time = time.time()
 
-    gridsearch(generations=410)
-    # best_tour, best_distance = genetic_algorithm()
+    # gridsearch(generations=410)
+
+    best_tour, best_distance = genetic_algorithm(generations=900)
+    print("Best Tour:", best_tour)
+    print("Best Distance:", best_distance)
+
     end_time = time.time()
+    plot_tour(best_tour, nodes, best_distance)
     print("Computation time taken:", end_time - start_time, "seconds")
-    # print("Best Tour:", best_tour)
-    # print("Best Distance:", best_distance)
+
+    print("\n--------------\n")
+
+    start_time = time.time()
+    best_tour, best_distance = genetic_algorithm(generations=350)
+    print("Best Tour:", best_tour)
+    print("Best Distance:", best_distance)
+
+    end_time = time.time()
+    plot_tour(best_tour, nodes, best_distance)
+    print("Computation time taken:", end_time - start_time, "seconds")
