@@ -4,6 +4,7 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 import math
+from math import isclose
 
 NUM_CITIES = 52
 global distance_matrix
@@ -93,21 +94,22 @@ def inversion_mutation(tour):
     tour[i:j] = reversed(tour[i:j])
     return tour
 
-def plot_tour(tour, nodes, best_dist):
+def plot_tour(tour, nodes, best_dist, params=None):
     x = [nodes[i][0] for i in tour]
     y = [nodes[i][1] for i in tour]
     # Also add the first city to the end to complete the loop
     x.append(x[0])
     y.append(y[0])
-
-    plt.title(f"Best Distance: {best_dist}")
+    if params is None:
+        plt.title(f"Best Distance: {best_dist}")
+    else:
+        plt.title(f"Best Distance: {best_dist}, \nParameters: {params}")
     plt.plot(x, y, 'o-')
     plt.show()
 
 def genetic_algorithm(pop_size=100, generations=2000, crossover_rate=0.8, mutation_rate=0.2):
     population = initialize_population(pop_size)
     best_fitness_over_time = []
-    stuck_counter = 0
 
     for generation in range(generations):
         genome_fitness = [total_distance(genome) for genome in population]
@@ -129,19 +131,26 @@ def genetic_algorithm(pop_size=100, generations=2000, crossover_rate=0.8, mutati
         best_fitness = min(genome_fitness)
         best_fitness_over_time.append(best_fitness)
 
+        # Checking if fitness has stagnated
+        if len(best_fitness_over_time) > 90:
+            if isclose(best_fitness, best_fitness_over_time[-40], rel_tol=0.015):
+                print(f'Stopping early at generation {generation} due to no improvement in fitness.')
+                break
+        # if all(isclose(fitness_c == best_fitness_over_time[-1], 1.5) for fitness_c in best_fitness_over_time[-10:]):
+        #     print(f'Stopping early at generation {generation} due to no improvement in fitness.')
+        #     break
+        # # Check if fitness hasn't improved over the last 100 generations
+        # if generation >= 100 and best_fitness >= min(best_fitness_over_time[-100:]):
+        #     # print("Stuck counter:", stuck_counter)
+        #     stuck_counter += 1
+        # if stuck_counter > 250:
+        #     print(f'Stopping early at generation {generation} due to no improvement in fitness.')
+        #     break
 
-        # Check if fitness hasn't improved over the last 100 generations
-        if generation >= 100 and best_fitness >= min(best_fitness_over_time[-100:]):
-            # print("Stuck counter:", stuck_counter)
-            stuck_counter += 1
-        if stuck_counter > 250:
-            print(f'Stopping early at generation {generation} due to no improvement in fitness.')
-            break
-
-    best_ga_tour = population[genome_fitness.index(min(genome_fitness))]
     best_loop_distance = min(genome_fitness)
-    best_loop_distance2 = total_distance(best_ga_tour)
-    print("Best loop distance:{}, best 2 loop {}", best_loop_distance, best_loop_distance2)
+    best_ga_tour = population[genome_fitness.index(best_loop_distance)]
+
+    print(f"Best loop distance: {best_loop_distance}")
     plot_fitness_over_time(best_fitness_over_time)
     # plot_tour(best_ga_tour, nodes, best_loop_distance)
     return best_ga_tour, best_loop_distance
@@ -154,14 +163,14 @@ def plot_fitness_over_time(fitness_scores):
     plt.show()
 
 # Gridsearch for the best possible hyperparameters
-# MUTATION_RATES = [0.01, 0.05, 0.12]
-# CROSSOVER_RATES = [0.7, 0.8, 0.9]
-# POPULATION_SIZES = [100, 200, 350]
-MUTATION_RATES = [0.01,]
-CROSSOVER_RATES = [0.8]
-POPULATION_SIZES = [350]
+MUTATION_RATES = [0.01, 0.05, 0.12]
+CROSSOVER_RATES = [0.7, 0.8, 0.9]
+POPULATION_SIZES = [100, 200, 350]
+# MUTATION_RATES = [0.01]
+# CROSSOVER_RATES = [0.8]
+# POPULATION_SIZES = [350]
 
-def gridsearch():
+def gridsearch(generations):
     best_params, best_solution = None, None
     best_ga_distance = float('inf')
 
@@ -171,17 +180,22 @@ def gridsearch():
     for POPULATION_SIZE in POPULATION_SIZES:
         for MUTATION_RATE in MUTATION_RATES:
             for CROSSOVER_RATE in CROSSOVER_RATES:
-                print(
-                    f'Running GA with Population size: {POPULATION_SIZE}, Mutation rate: {MUTATION_RATE}, Crossover rate: {CROSSOVER_RATE}')
+                iter_start_time = time.time()
+                params = {POPULATION_SIZE, MUTATION_RATE, CROSSOVER_RATE}
+
                 current_tour, current_distance = (
-                    genetic_algorithm(pop_size=POPULATION_SIZE, generations=400, crossover_rate=CROSSOVER_RATE, mutation_rate=MUTATION_RATE))
+                    genetic_algorithm(pop_size=POPULATION_SIZE, generations=generations, crossover_rate=CROSSOVER_RATE, mutation_rate=MUTATION_RATE))
+                iter_time_sum = time.time() - iter_start_time
+                print(
+                    f'GA with Population size: {POPULATION_SIZE}, Mutation rate: {MUTATION_RATE}, Crossover rate: {CROSSOVER_RATE} \n Took: {iter_time_sum}')
+
                 if current_distance < best_ga_distance:
-                    plot_tour(nodes, current_tour, current_distance)
+                    plot_tour(current_tour, nodes, current_distance, params)
                     best_solution, best_ga_distance = current_tour, current_distance
                     best_params = (POPULATION_SIZE, MUTATION_RATE, CROSSOVER_RATE)
                 print('----------------------------------------------')
 
-    print('Best Params: ', best_params)
+    print(f'Best Params - Pop:{best_params[0]}, Mut:{best_params[1]}, Crs: {best_params[2]}')
     print("Best Tour:", best_solution)
     print("Best Distance:", best_ga_distance)
     return
@@ -194,7 +208,7 @@ if __name__ == "__main__":
     nodes, distance_matrix = parse_tsplib(filename)
     start_time = time.time()
 
-    gridsearch()
+    gridsearch(generations=410)
     # best_tour, best_distance = genetic_algorithm()
     end_time = time.time()
     print("Computation time taken:", end_time - start_time, "seconds")
