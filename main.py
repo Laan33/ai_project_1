@@ -26,10 +26,8 @@ def parse_tsplib(filename):
 
     return nodes, distance_matrix
 
-
 def euclidean_distance(a, b):
     return math.sqrt((a[0] - b[0]) ** 2 + (a[1] - b[1]) ** 2)
-
 
 def total_distance(tour):
     distance = 0
@@ -64,7 +62,6 @@ def ordered_crossover(parent1, parent2):
     child = [remaining.pop(0) if gene == -1 else gene for gene in child]
     return child
 
-
 def partially_mapped_crossover(parent1, parent2):
     size = len(parent1)
     start, end = sorted(random.sample(range(size), 2))
@@ -78,12 +75,10 @@ def partially_mapped_crossover(parent1, parent2):
                 child[i] = mapping[child[i]]
     return child
 
-
 def swap_mutation(tour):
     i, j = random.sample(range(len(tour)), 2)
     tour[i], tour[j] = tour[j], tour[i]
     return tour
-
 
 def inversion_mutation(tour):
     i, j = sorted(random.sample(range(len(tour)), 2))
@@ -103,7 +98,8 @@ def plot_tour(tour, nodes, best_dist, params=None):
     plt.plot(x, y, 'o-')
     plt.show()
 
-def genetic_algorithm(pop_size=200, generations=500, crossover_rate=0.9, mutation_rate=0.2):
+def genetic_algorithm(pop_size=170, generations=500, crossover_rate=0.87, mutation_rate=0.15):
+    genome_fitness = []
     population = initialize_population(pop_size)
     best_fitness_over_time = []
 
@@ -185,7 +181,14 @@ def gridsearch(generations):
     print("Best Distance:", best_ga_distance)
     return
 
-NUM_CITIES = 1002
+def method_grid_search():
+    mut_methods = [swap_mutation, inversion_mutation]
+    crs_methods = [ordered_crossover, partially_mapped_crossover]
+    for mut_to_use in mut_methods:
+        for crs_to_use in crs_methods:
+            genetic_algorithm()
+
+NUM_CITIES = 800
 
 if __name__ == "__main__":
     # filename = "berlin52.txt"
@@ -197,7 +200,7 @@ if __name__ == "__main__":
 
     # gridsearch(generations=410)
 
-    best_tour, best_distance = genetic_algorithm(generations=900)
+    best_tour, best_distance = genetic_algorithm(generations=300)
     print("Best Tour:", best_tour)
     print("Best Distance:", best_distance)
 
