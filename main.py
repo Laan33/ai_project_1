@@ -162,8 +162,9 @@ CROSSOVER_RATES = [0.8]
 POPULATION_SIZES = [350]
 
 def gridsearch():
-    best_params = None
+    best_params, best_solution = None, None
     best_ga_distance = float('inf')
+
 
     # Gridsearch for the best possible combination of hyperparameters
     # Hyperparameters: Population size, Mutation rate, Crossover rate
@@ -181,7 +182,7 @@ def gridsearch():
                 print('----------------------------------------------')
 
     print('Best Params: ', best_params)
-    print("Best Tour:", best_tour)
+    print("Best Tour:", best_solution)
     print("Best Distance:", best_ga_distance)
     return
 
