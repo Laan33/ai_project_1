@@ -1,0 +1,166 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Wenneker Assignment
+% LaTeX Template
+% Version 2.0 (12/1/2019)
+%
+% This template originates from:
+% http://www.LaTeXTemplates.com
+%
+% Authors:
+% Vel (vel@LaTeXTemplates.com)
+% Frits Wenneker
+%
+% License:
+% CC BY-NC-SA 3.0 (http://creativecommons.org/licenses/by-nc-sa/3.0/)
+% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%----------------------------------------------------------------------------------------
+%	PACKAGES AND OTHER DOCUMENT CONFIGURATIONS
+%----------------------------------------------------------------------------------------
+
+\documentclass[11pt]{scrartcl} % Font size
+
+\input{structure.tex} % Include the file specifying the document structure and custom commands
+\usepackage{hyperref} % Include the hyperref package for URLs
+\usepackage[backend=bibtex,style=numeric]{biblatex}
+\usepackage{csquotes}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\addbibresource{Bibliography.bib} % Specify the bibliography file (ensure this file exists and contains entries)
+
+
+
+%----------------------------------------------------------------------------------------
+%	TITLE SECTION
+%----------------------------------------------------------------------------------------
+
+\title{	
+	\normalfont\normalsize
+	\textsc{University of Galway}\\ % Your university, school and/or department name(s)
+	\vspace{25pt} % Whitespace
+	\rule{\linewidth}{0.5pt}\\ % Thin top horizontal rule
+	\vspace{20pt} % Whitespace
+	{\huge  Project 1: Evolutionary Search (GAs)}\\ % The assignment title
+	\vspace{12pt} % Whitespace
+	\rule{\linewidth}{2pt}\\ % Thick bottom horizontal rule
+	\vspace{12pt} % Whitespace
+}
+
+\author{\LARGE Cathal Lawlor} % Your name
+
+\date{\normalsize\today} % Today's date (\today) or a custom date
+
+\begin{document}
+
+\maketitle % Print the title
+
+% %----------------------------------------------------------------------------------------
+% %	FIGURE EXAMPLE
+% %----------------------------------------------------------------------------------------
+
+% % \section{Image Interpretation}
+
+% % \begin{figure}[h] % [h] forces the figure to be output where it is defined in the code (it suppresses floating)
+% % 	\centering
+% % 	\includegraphics[width=0.5\columnwidth]{swallow.jpg} % Example image
+% % 	\caption{European swallow.}
+% % \end{figure}
+
+% %------------------------------------------------
+
+% \subsection{What is the airspeed velocity of an unladen swallow?}
+
+% While this question leaves out the crucial element of the geographic origin of the swallow, according to Jonathan Corum, an unladen European swallow maintains a cruising airspeed velocity of \textbf{11 metres per second}, or \textbf{24 miles an hour}. The velocity of the corresponding African swallows requires further research as kinematic data is severely lacking for these species.
+
+\section{Github Repository}
+Github repository with code \href{https://github.com/Laan33/ai_project_1}{here}
+
+\section{Implementation details \& design choices}
+
+\subsection{Selection method}
+I implemented and tried roulette wheel selection, tournament selection and the monte carlo selection methods.
+I found tournament to be the most reliable, and easiest to implement in python, to actually get consistent, repeatable results (that actually worked).
+
+\subsection{Crossover methods}
+\subsection{Crossover methods}
+
+I implemented both ordered crossover and partially mapped crossover. 
+
+For partially mapped crossover, I used the implementation from here \cite{baeldung_pmx}, where the algorithm is as follows:
+
+\begin{algorithm}
+\caption{Partially Mapped Crossover (PMX)}
+\begin{algorithmic}
+\State \textbf{Input:} Parent1, Parent2
+\State \textbf{Output:} Child
+\State Randomly select crossover segment [start, end]
+\State Copy crossover segment from Parent1 to Child
+\State Create mapping between crossover sections of Parent1 and Parent2
+\For{each position in the Child}
+    \If{position is not in crossover segment}
+        \State value = Parent2[position]
+        \While{value is already in Child}
+            \State value = mapping[value]
+        \EndWhile
+        \State Child[position] = value
+    \EndIf
+\EndFor
+\State \textbf{Return} Child
+\end{algorithmic}
+\end{algorithm}
+
+For ordered crossover, I interpreted the algorithm from here \cite{ordered_crossover_stackoverflow}, where:
+
+\begin{algorithm}
+\caption{Ordered Crossover (OX)}
+\begin{algorithmic}
+\State \textbf{Input:} Parent1, Parent2
+\State \textbf{Output:} Child
+\State Randomly select crossover segment [start, end]
+\State Copy crossover segment from Parent1 to Child
+\State Create a list of remaining genes from Parent2 not in Child
+\For{each position in Child}
+    \If{position is empty}
+        \State Fill position with the next gene from remaining list
+    \EndIf
+\EndFor
+\State \textbf{Return} Child
+\end{algorithmic}
+\end{algorithm}
+
+For ordered crossover, I interpreted the algorithm from here\cite{ordered_crossover_stackoverflow}, where:
+\begin{verbatim}
+	def ordered_crossover(parent1, parent2):
+		size = len(parent1)
+		# Select crossover points
+		start, end = sorted(random.sample(range(size), 2))
+
+		# Initialize offspring & copy the segment between the points from parent1
+		child = [-1] * size 
+		child[start:end] = parent1[start:end]
+		
+		# Get the remaining genes from parent2 & fill them in order
+		remaining = [gene for gene in parent2 if gene not in child] 
+		child = [remaining.pop(0) if gene == -1 else gene for gene in child] 
+		return child
+\end{verbatim}
+
+
+
+\subsection{Mutation methods}
+I implemented both swap mutation and inversion mutation.
+
+
+%------------------------------------------------
+
+%------------------------------------------------
+
+% ...existing code...
+
+% \bibliographystyle{unsrt}
+% \bibliography{references}
+
+\printbibliography
+
+\end{document}
