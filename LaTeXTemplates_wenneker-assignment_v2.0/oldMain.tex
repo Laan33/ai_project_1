@@ -55,24 +55,6 @@
 
 \maketitle % Print the title
 
-% %----------------------------------------------------------------------------------------
-% %	FIGURE EXAMPLE
-% %----------------------------------------------------------------------------------------
-
-% % \section{Image Interpretation}
-
-% % \begin{figure}[h] % [h] forces the figure to be output where it is defined in the code (it suppresses floating)
-% % 	\centering
-% % 	\includegraphics[width=0.5\columnwidth]{swallow.jpg} % Example image
-% % 	\caption{European swallow.}
-% % \end{figure}
-
-% %------------------------------------------------
-
-% \subsection{What is the airspeed velocity of an unladen swallow?}
-
-% While this question leaves out the crucial element of the geographic origin of the swallow, according to Jonathan Corum, an unladen European swallow maintains a cruising airspeed velocity of \textbf{11 metres per second}, or \textbf{24 miles an hour}. The velocity of the corresponding African swallows requires further research as kinematic data is severely lacking for these species.
-
 \section{Github Repository}
 Github repository with code \href{https://github.com/Laan33/ai_project_1}{here}
 
@@ -82,85 +64,71 @@ Github repository with code \href{https://github.com/Laan33/ai_project_1}{here}
 I implemented and tried roulette wheel selection, tournament selection and the monte carlo selection methods.
 I found tournament to be the most reliable, and easiest to implement in python, to actually get consistent, repeatable results (that actually worked).
 
-\subsection{Crossover methods}
+As I'll explain in the Potential improvements\ref{Potential improvements} section, I believe that tournament selection is the best choice for the travelling salesperson problem.
 \subsection{Crossover methods}
 
 I implemented both ordered crossover and partially mapped crossover. 
 
-For partially mapped crossover, I used the implementation from here \cite{baeldung_pmx}, where the algorithm is as follows:
+In partially mapped crossover (PMX)\cite{baeldung_pmx}, a random section of genes from one parent is copied to the child. The corresponding genes from the other parent are then mapped to avoid duplicates, ensuring each value appears exactly once. This method helps preserve relative positions within the crossover section.
 
-\begin{algorithm}
-\caption{Partially Mapped Crossover (PMX)}
-\begin{algorithmic}
-\State \textbf{Input:} Parent1, Parent2
-\State \textbf{Output:} Child
-\State Randomly select crossover segment [start, end]
-\State Copy crossover segment from Parent1 to Child
-\State Create mapping between crossover sections of Parent1 and Parent2
-\For{each position in the Child}
-    \If{position is not in crossover segment}
-        \State value = Parent2[position]
-        \While{value is already in Child}
-            \State value = mapping[value]
-        \EndWhile
-        \State Child[position] = value
-    \EndIf
-\EndFor
-\State \textbf{Return} Child
-\end{algorithmic}
-\end{algorithm}
+In ordered crossover (OX)\cite{ordered_crossover_stackoverflow}, a random section of genes from one parent is copied to the child. The remaining positions are filled with genes from the other parent, in the order they appear, while skipping any duplicates. This ensures that the child inherits the relative ordering of cities from both parents.
 
-For ordered crossover, I interpreted the algorithm from here \cite{ordered_crossover_stackoverflow}, where:
+I picked these two, as they both will work well for the travelling salesman problem, as they both preserve the order of the cities in the parents, which is important for the TSP.
+The difference between the two is that PMX will preserve the relative order of the cities in the crossover section, while OX will not.
 
-\begin{algorithm}
-\caption{Ordered Crossover (OX)}
-\begin{algorithmic}
-\State \textbf{Input:} Parent1, Parent2
-\State \textbf{Output:} Child
-\State Randomly select crossover segment [start, end]
-\State Copy crossover segment from Parent1 to Child
-\State Create a list of remaining genes from Parent2 not in Child
-\For{each position in Child}
-    \If{position is empty}
-        \State Fill position with the next gene from remaining list
-    \EndIf
-\EndFor
-\State \textbf{Return} Child
-\end{algorithmic}
-\end{algorithm}
-
-For ordered crossover, I interpreted the algorithm from here\cite{ordered_crossover_stackoverflow}, where:
-\begin{verbatim}
-	def ordered_crossover(parent1, parent2):
-		size = len(parent1)
-		# Select crossover points
-		start, end = sorted(random.sample(range(size), 2))
-
-		# Initialize offspring & copy the segment between the points from parent1
-		child = [-1] * size 
-		child[start:end] = parent1[start:end]
-		
-		# Get the remaining genes from parent2 & fill them in order
-		remaining = [gene for gene in parent2 if gene not in child] 
-		child = [remaining.pop(0) if gene == -1 else gene for gene in child] 
-		return child
-\end{verbatim}
-
-
+I chose these, as while PMX is more likely to produce a better child, OX can provide a more diverse population, which can be useful in the early stages of the algorithm.
 
 \subsection{Mutation methods}
+
 I implemented both swap mutation and inversion mutation.
 
+In swap mutation, two random cities in the tour are selected, and their positions are exchanged. This introduces small, random changes while preserving the tour length.
+
+In inversion mutation, a random subsection of the tour is selected, and the order of cities within that section is reversed. This helps the algorithm explore new solutions while maintaining most of the existing tour structure.
+
 
 %------------------------------------------------
 
-%------------------------------------------------
 
-% ...existing code...
 
-% \bibliographystyle{unsrt}
-% \bibliography{references}
+
+
+\section{Experimentation results \& analysis}
+\subsection{Experimentation setup}
+
+\subsection{Results}
+\subsubsection{}
+
+
+\section{Comparison with known optimal solutions}
+\label{Comparison with known optimal solutions}
+
+Comparing to the optimal solutions from Heidelberg university \cite{heidelberg_university_best_known}, my algorithm.
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{|c|c|c|c|}
+\hline
+\textbf{Dataset} & \textbf{My Algorithm} & \textbf{Optimal Solution} & \textbf{Difference} \\ \hline
+\textbf{belin52} & 7970.9 & 7542 & 5.69\% \\ \hline
+\textbf{kroA100} & Algorithm 2 & 21282 & 8\% \\ \hline
+\textbf{pr1002} & Algorithm 3 & 259045 & 5\% \\ \hline
+\end{tabular}
+\caption{Comparison of algorithms with known optimal solutions}
+\label{tab:comparison}
+\end{table}
+
+
+\section{Potential improvements}
+\label{Potential improvements}
+One easy, improvment I believe for my algorithm would be to employ elitism.
+I implemented it in a early version of the program. I chose not to implement it, as I wanted to see how the various methods for crossover and mutation would handle the problem alone, without the help of elitism.
+It would probably extract a small bit more performance out, especially for the bigger datasets, less so in the Berlin dataset.
+
+I believe that tournament selection is a good choice, being the sweet spot for a genetic algorithm solving TSP. It's fast, simple, and maintains a good diversity and doesn't suffer with early convergence like roulette wheel selection can\cite{genetic_algorithm_afternoon}.
+I also tried monte carlo selection, but I do not believe it works for the travelling salesperson problem.
+
+\section{Conclusions}
 
 \printbibliography
-
 \end{document}

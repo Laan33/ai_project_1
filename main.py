@@ -144,7 +144,7 @@ def genetic_algorithm(pop_size=185, generations=500, crossover_rate=0.87,
 
         # Checking if fitness has stagnated
         if len(best_fitness_over_time) > 400:
-            if isclose(best_fitness, best_fitness_over_time[-60], rel_tol=0.005):
+            if isclose(best_fitness, best_fitness_over_time[-60], rel_tol=0.0025):
                 print(f'Stopping early at generation {generation} due to no improvement in fitness.')
                 break
 
@@ -163,9 +163,9 @@ def plot_fitness_over_time(fitness_scores):
     plt.show()
 
 # Gridsearch for the best possible hyperparameters
-MUTATION_RATES = [0.01, 0.05, 0.12]
-CROSSOVER_RATES = [0.7, 0.8, 0.9]
-POPULATION_SIZES = [100, 200, 350]
+MUTATION_RATES = [0.03, 0.12, 0.2]
+CROSSOVER_RATES = [0.6, 0.71, 0.82, 0.9]
+POPULATION_SIZES = [120, 280, 470]
 # MUTATION_RATES = [0.01]
 # CROSSOVER_RATES = [0.8]
 # POPULATION_SIZES = [350]
@@ -196,9 +196,7 @@ def gridsearch(generations):
                 print('----------------------------------------------')
 
     print(f'Best Params - Pop:{best_params[0]}, Mut:{best_params[1]}, Crs: {best_params[2]}')
-    print("Best Tour:", best_solution)
-    print("Best Distance:", best_ga_distance)
-    return
+    return best_solution, best_ga_distance, best_params
 
 def method_grid_search(pop_size=185, generations=300, crossover_rate=0.87, mutation_rate=0.15):
     mut_methods = [swap_mutation, inversion_mutation]
@@ -221,17 +219,17 @@ def method_grid_search(pop_size=185, generations=300, crossover_rate=0.87, mutat
     print(f'Best Methods - Mutation: {best_methods[0].__name__}, Crossover: {best_methods[1].__name__}')
     return best_ga_distance, best_solution
 
-NUM_CITIES = 50
+NUM_CITIES = 100
 
 if __name__ == "__main__":
     # filename = "berlin52.txt"
-    # filename = "kroA100.txt"
-    filename = "pr1002.txt"
+    filename = "kroA100.txt"
+    # filename = "pr1002.txt"
 
     nodes, distance_matrix = parse_tsplib(filename)
-    # start_time = time.time()
+    start_time = time.time()
 
-    # gridsearch(generations=450)
+    best_tour, best_distance, best_params = gridsearch(generations=3500)
 
     # # best_distance, best_tour = method_grid_search(generations=550)
     # print('--------------------------------\n')
@@ -244,8 +242,8 @@ if __name__ == "__main__":
 
     # print("\n--------------\n")
     #
-    start_time = time.time()
-    best_tour, best_distance = genetic_algorithm(generations=3500)
+    # start_time = time.time()
+    # best_tour, best_distance = genetic_algorithm(generations=3500)
     print("Best Tour:", best_tour)
     print("Best Distance:", round(best_distance, 3))
 
