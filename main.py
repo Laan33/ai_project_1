@@ -4,13 +4,20 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 import math
+import csv
 from math import isclose
 
 global distance_matrix
 
+def save_to_csv(csv_name, data):
+    with open(csv_name, "w", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerow(["Population Size", "Mutation Rate", "Crossover Rate", "Best Fitness", "Time", "Iterations"])
+        writer.writerows(data)
+    print(f"Results saved to {csv_name}")
 
-def parse_tsplib(filename):
-    with open(filename, 'r') as file:
+def parse_tsplib(dataset_filename):
+    with open("datasets/" + dataset_filename + ".txt", 'r') as file:
         lines = file.readlines()
 
     nodes = []
@@ -38,20 +45,18 @@ def total_distance(tour):
 def initialize_population(pop_size):
     return [random.sample(range(NUM_CITIES), NUM_CITIES) for _ in range(pop_size)]
 
-# Tournament selection for the genetic algorithm - selects the best tour from a random subset of tours
 def tournament_selection(population, fitness, k=3):
     selected = random.sample(list(zip(population, fitness)), k)
     return min(selected, key=lambda x: x[1])[0]
 
 def monte_carlo_selection(population, fitness):
-    # Inverse the fitness to create a probability distribution (lower fitness = better tour)
     fitness = np.array(fitness)
     probabilities = 1 / (fitness + 1e-10)  # Avoid division by zero
     probabilities /= probabilities.sum()   # Normalize to sum to 1
 
     # Randomly select an individual based on the probability distribution
     selected_index = np.random.choice(len(population), p=probabilities)
-    return population[selected_index] # It's crap.
+    return population[selected_index] # Monte carlo is no good
 
 def ordered_crossover(parent1, parent2):
     size = len(parent1)
@@ -65,29 +70,18 @@ def ordered_crossover(parent1, parent2):
 def partially_mapped_crossover(parent1, parent2):
     size = len(parent1)
     start, end = sorted(random.sample(range(size), 2))
-
-    # Step 1: Create a child and copy the crossover section
     child = [-1] * size
     child[start:end] = parent1[start:end]
-
-    # Step 2: Create the mapping from parent1 to parent2 for the crossover section
     mapping = {}
     for i in range(start, end):
         mapping[parent1[i]] = parent2[i]
-
-    # Step 3: Fill in the remaining values
     for i in range(size):
         if child[i] == -1:
             value = parent2[i]
-            # Resolve conflicts using the mapping
             while value in child:
-                # print(value)
-                # print(mapping)
                 value = mapping[value]
             child[i] = value
-
     return child
-
 
 def swap_mutation(tour):
     i, j = random.sample(range(len(tour)), 2)
@@ -112,8 +106,7 @@ def plot_tour(tour, nodes, best_dist, params=None):
     plt.plot(x, y, 'o-')
     plt.show()
 
-def genetic_algorithm(pop_size=185, generations=500, crossover_rate=0.87,
-                      mutation_rate=0.15, mut_mtd = None, crs_mtd=None, print_tour = True):
+def genetic_algorithm(pop_size=185, generations=500, crossover_rate=0.87, mutation_rate=0.15, mut_mtd=None, crs_mtd=None):
     if crs_mtd is None:
         crs_mtd = partially_mapped_crossover
     if mut_mtd is None:
@@ -121,6 +114,7 @@ def genetic_algorithm(pop_size=185, generations=500, crossover_rate=0.87,
     genome_fitness = []
     population = initialize_population(pop_size)
     best_fitness_over_time = []
+    generation = 0
 
     for generation in range(generations):
         genome_fitness = [total_distance(genome) for genome in population]
@@ -139,10 +133,10 @@ def genetic_algorithm(pop_size=185, generations=500, crossover_rate=0.87,
                 child2 = mut_mtd(child2)
             new_population.extend([child1, child2])
         population = new_population
-        best_fitness = round(min(genome_fitness), 3)
+        best_fitness = round(min(genome_fitness), 1)
         best_fitness_over_time.append(best_fitness)
 
-        # Checking if fitness has stagnated
+        # Stopping if no improvement in fitness for 60 generations (0.25% tolerance)
         if len(best_fitness_over_time) > 400:
             if isclose(best_fitness, best_fitness_over_time[-60], rel_tol=0.0025):
                 print(f'Stopping early at generation {generation} due to no improvement in fitness.')
@@ -150,10 +144,9 @@ def genetic_algorithm(pop_size=185, generations=500, crossover_rate=0.87,
 
     best_loop_distance = min(genome_fitness)
     best_ga_tour = population[genome_fitness.index(best_loop_distance)]
-
-    print(f"Best loop distance: {round(best_loop_distance, 3)}")
+    print(f"Best loop distance: {round(best_loop_distance, 1)}")
     plot_fitness_over_time(best_fitness_over_time)
-    return best_ga_tour, best_loop_distance
+    return best_ga_tour, best_loop_distance, generation
 
 def plot_fitness_over_time(fitness_scores):
     plt.plot(fitness_scores)
@@ -166,87 +159,42 @@ def plot_fitness_over_time(fitness_scores):
 MUTATION_RATES = [0.03, 0.12, 0.2]
 CROSSOVER_RATES = [0.6, 0.71, 0.82, 0.9]
 POPULATION_SIZES = [120, 280, 470]
-# MUTATION_RATES = [0.01]
-# CROSSOVER_RATES = [0.8]
-# POPULATION_SIZES = [350]
-
-def gridsearch(generations, crossover_method=None, mutation_method=None):
-    best_params, best_solution = None, None
-    best_ga_distance = float('inf')
-
-
-    # Gridsearch for the best possible combination of hyperparameters
-    # Hyperparameters: Population size, Mutation rate, Crossover rate
+def gridsearch(generations, filename):
+    grid_results = []
     for POPULATION_SIZE in POPULATION_SIZES:
         for MUTATION_RATE in MUTATION_RATES:
             for CROSSOVER_RATE in CROSSOVER_RATES:
-                iter_start_time = time.time()
-                params = {POPULATION_SIZE, MUTATION_RATE, CROSSOVER_RATE}
+                start_time = time.time()
+                current_tour, current_distance, generation = genetic_algorithm(pop_size=POPULATION_SIZE, generations=generations, crossover_rate=CROSSOVER_RATE, mutation_rate=MUTATION_RATE)
+                elapsed_time = round((time.time() - start_time), 3)
+                grid_results.append((POPULATION_SIZE, MUTATION_RATE, CROSSOVER_RATE, current_distance, elapsed_time, generation, current_tour))
+    save_to_csv("results/" + filename + "_results.csv", grid_results)
+    return grid_results
 
-                current_tour, current_distance = (
-                    genetic_algorithm(pop_size=POPULATION_SIZE, generations=generations, crossover_rate=CROSSOVER_RATE, mutation_rate=MUTATION_RATE))
-                iter_time_sum = time.time() - iter_start_time
-                print(
-                    f'GA with Population size: {POPULATION_SIZE}, Mutation rate: {MUTATION_RATE}, Crossover rate: {CROSSOVER_RATE} \n Took: {iter_time_sum}')
+def show_best_result():
+    # Print out the best result, its params and plot the tour
+    best_result = min(results, key=lambda x: x[3])  # Find the result with the best (minimum) distance
+    best_population_size, best_mutation_rate, best_crossover_rate, best_distance, best_time, best_generations, best_tour = best_result
 
-                if current_distance < best_ga_distance:
-                    plot_tour(current_tour, nodes, current_distance, params)
-                    best_solution, best_ga_distance = current_tour, current_distance
-                    best_params = (POPULATION_SIZE, MUTATION_RATE, CROSSOVER_RATE)
-                print('----------------------------------------------')
+    print(f"Best Result:\nPopulation Size: {best_population_size}\nMutation Rate: {best_mutation_rate}\nCrossover Rate: {best_crossover_rate}\nBest Distance: {round(best_distance, 1)}\nTime: {best_time}\nGenerations: {best_generations}")
 
-    print(f'Best Params - Pop:{best_params[0]}, Mut:{best_params[1]}, Crs: {best_params[2]}')
-    return best_solution, best_ga_distance, best_params
+    plot_tour(best_tour, nodes, best_distance)
 
-def method_grid_search(pop_size=185, generations=300, crossover_rate=0.87, mutation_rate=0.15):
-    mut_methods = [swap_mutation, inversion_mutation]
-    crs_methods = [ordered_crossover, partially_mapped_crossover]
-    best_methods, best_solution = None, None
-    best_ga_distance = float('inf')
+def load_best_result(results_file):
+    with open("results/" + results_file + "_results.csv", "r") as file:
+        reader = csv.reader(file)
+        next(reader)  # Skip the header
+        results = [tuple(map(float, row)) for row in reader]
+    return results
 
-    for mut_to_use in mut_methods:
-        for crs_to_use in crs_methods:
-            print('----------------------------------------------')
-            print(f'Using mutation method: {mut_to_use.__name__}, crossover method: {crs_to_use.__name__}')
-            print(f'Population size: {pop_size}, generations: {generations}, crossover rate: {crossover_rate}, mutation rate: {mutation_rate}')
-
-            cur_tour, cur_dist = genetic_algorithm(pop_size=pop_size, generations=generations, crossover_rate=crossover_rate,
-                      mutation_rate=mutation_rate, mut_mtd = mut_to_use, crs_mtd=crs_to_use)
-            if cur_dist < best_ga_distance:
-                best_methods = [mut_to_use, crs_to_use]
-                plot_tour(cur_tour, nodes, cur_dist, best_methods)
-                best_solution, best_ga_distance = cur_tour, cur_dist
-    print(f'Best Methods - Mutation: {best_methods[0].__name__}, Crossover: {best_methods[1].__name__}')
-    return best_ga_distance, best_solution
-
-NUM_CITIES = 100
+NUM_CITIES = 52
 
 if __name__ == "__main__":
-    # filename = "datasets/berlin52.txt"
-    filename = "datasets/kroA100.txt"
-    # filename = "datasets/pr1002.txt"
-
+    # filename = "kroA100"
+    filename = "berlin52"
     nodes, distance_matrix = parse_tsplib(filename)
-    start_time = time.time()
+    results = gridsearch(generations=3500, filename=filename)
+    # results = load_best_result(filename)
+    show_best_result()
 
-    best_tour, best_distance, best_params = gridsearch(generations=3500)
 
-    # # best_distance, best_tour = method_grid_search(generations=550)
-    # print('--------------------------------\n')
-    # print("Best Tour:", best_tour)
-    # print("Best Distance:", best_distance)
-    #
-    # end_time = time.time()
-    # plot_tour(best_tour, nodes, best_distance)
-    # print("Computation time taken:", end_time - start_time, "seconds")
-
-    # print("\n--------------\n")
-    #
-    # start_time = time.time()
-    # best_tour, best_distance = genetic_algorithm(generations=3500)
-    print("Best Tour:", best_tour)
-    print("Best Distance:", round(best_distance, 3))
-
-    end_time = time.time()
-    plot_tour(best_tour, nodes, best_distance)
-    print("Computation time taken:", round((end_time - start_time), 1), "seconds")
