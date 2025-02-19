@@ -170,7 +170,7 @@ POPULATION_SIZES = [120, 280, 470]
 # CROSSOVER_RATES = [0.8]
 # POPULATION_SIZES = [350]
 
-def gridsearch(generations):
+def gridsearch(generations, crossover_method=None, mutation_method=None):
     best_params, best_solution = None, None
     best_ga_distance = float('inf')
 
@@ -222,9 +222,9 @@ def method_grid_search(pop_size=185, generations=300, crossover_rate=0.87, mutat
 NUM_CITIES = 100
 
 if __name__ == "__main__":
-    # filename = "berlin52.txt"
-    filename = "kroA100.txt"
-    # filename = "pr1002.txt"
+    # filename = "datasets/berlin52.txt"
+    filename = "datasets/kroA100.txt"
+    # filename = "datasets/pr1002.txt"
 
     nodes, distance_matrix = parse_tsplib(filename)
     start_time = time.time()
