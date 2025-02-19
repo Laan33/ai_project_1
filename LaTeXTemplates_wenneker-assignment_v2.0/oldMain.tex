@@ -64,7 +64,7 @@ Github repository with code available \href{https://github.com/Laan33/ai_project
 I implemented and tried roulette wheel selection, tournament selection and the monte carlo selection methods.
 I found tournament to be the most reliable, and easiest to implement in python, to actually get consistent, repeatable results (that actually worked).
 
-As I'll explain in the Potential improvements\ref{Potential improvements} section, I believe that tournament selection is the best choice for the travelling salesperson problem.
+As I'll explain in the potential improvements section \ref{Potential improvements}, I believe that tournament selection is the best choice for the travelling salesperson problem.
 \subsection{Crossover methods}
 
 I implemented both ordered crossover and partially mapped crossover. 
@@ -86,6 +86,13 @@ In swap mutation, two random cities in the tour are selected, and their position
 
 In inversion mutation, a random subsection of the tour is selected, and the order of cities within that section is reversed. This helps the algorithm explore new solutions while maintaining most of the existing tour structure.
 
+I chose these because they introduce different types of variations in the population. Swap mutation makes small changes that can help fine-tune solutions, while inversion mutation can make larger changes that help the algorithm escape local optima. 
+I wanted to see, when compairing both methods, the differences in the makeup of the algorithm.
+
+\subsection{Termination condition}
+I implemented a max number of generations to run, but I also added a clause, that if the algorithm hasn't improved by more than 0.25\% in the last 60 generations, it will terminate early.
+
+This is because, genetic algorithms can get stuck in local optima, or just simply converge.
 
 %------------------------------------------------
 
@@ -97,7 +104,12 @@ In inversion mutation, a random subsection of the tour is selected, and the orde
 \subsection{Experimentation setup}
 
 \subsection{Results}
-\subsubsection{}
+\subsubsection{Best crossover method}
+
+\subsubsection{Best mutation method}
+
+\subsubsection{Best parameters}
+
 
 
 \section{Comparison with known optimal solutions}
@@ -110,13 +122,17 @@ Comparing to the optimal solutions from Heidelberg university \cite{heidelberg_u
 \begin{tabular}{|c|c|c|c|}
 \hline
 \textbf{Dataset} & \textbf{My Algorithm} & \textbf{Optimal Solution} & \textbf{Difference} \\ \hline
-\textbf{belin52} & 7970.9 & 7542 & 5.69\% \\ \hline
-\textbf{kroA100} & Algorithm 2 & 21282 & 8\% \\ \hline
-\textbf{pr1002} & Algorithm 3 & 259045 & 5\% \\ \hline
+\textbf{berlin52} & 7,700.2 & 7,542 & 2.1\% \\ \hline
+\textbf{kroA100} & 23,171.6 & 21,282 & 8.88\% \\ \hline
+\textbf{pr1002} & 1,318,922.4 & 259,045 & 409\% \\ \hline
 \end{tabular}
 \caption{Comparison of algorithms with known optimal solutions}
 \label{tab:comparison}
 \end{table}
+
+I ran gridsearch for parameter tuning on both the Berlin52 and KroA100 datasets, and then ran only one iteration on the pr1002 dataset.
+
+The 
 
 
 \section{Potential improvements}
@@ -128,6 +144,7 @@ It would probably extract a small bit more performance out, especially for the b
 I believe that tournament selection is a good choice, being the sweet spot for a genetic algorithm solving TSP. It's fast, simple, and maintains a good diversity and doesn't suffer with early convergence like roulette wheel selection can\cite{genetic_algorithm_afternoon}.
 I also tried monte carlo selection, but I do not believe it works for the travelling salesperson problem.
 
+Another, is to run the same parameters multiple times on differening starting populations, and averaging the results. This would give a more accurate representation of the algorithm's performance, as the starting population can have a big impact on the final result. e.g. it may get stuck in a local optima, or converge too early.
 \section{Conclusions}
 
 \printbibliography
