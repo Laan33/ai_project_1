@@ -187,20 +187,29 @@ def load_best_result(results_file):
         results = [tuple(map(float, row)) for row in reader]
     return results
 
-NUM_CITIES = 52
+NUM_CITIES = 1002
 
 if __name__ == "__main__":
-    # filename = "berlin52"
+    # pick a dataset
+    filename = "berlin52"
     # filename = "kroA100"
-    filename = "pr1002"
+    # filename = "pr1002"
     nodes, distance_matrix = parse_tsplib(filename)
-    # results = gridsearch(generations=400, filename=filename)
-    # results = load_best_result(filename)
-    start_time = time.time()
-    best_tour, best_distance, generation = genetic_algorithm(pop_size=400, generations=2100, crossover_rate=0.87, mutation_rate=0.14)
-    elapsed_time = round((time.time() - start_time), 3)
-    results = [(400, 0.14, 0.87, best_distance, elapsed_time, generation, best_tour)]
-    save_to_csv("results/single_" + filename + "_results.csv", results)
+
+    results = gridsearch(generations=400, filename=filename)
     show_best_result()
+
+    # For loading from CSV
+    # ----------------
+    # results = load_best_result(filename)
+
+    # For a single run
+    # ----------------
+    # start_time = time.time()
+    # best_tour, best_distance, generation = genetic_algorithm(pop_size=400, generations=2100, crossover_rate=0.87, mutation_rate=0.14)
+    # elapsed_time = round((time.time() - start_time), 3)
+    # results = [(400, 0.14, 0.87, best_distance, elapsed_time, generation, best_tour)]
+    # save_to_csv("results/single_" + filename + "_results.csv", results)
+    # show_best_result()
 
 
