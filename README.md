@@ -43,6 +43,13 @@ This project implements a genetic algorithm to solve the Travelling Salesman Pro
 - **Hyperparameters**:
     - Modify the [MUTATION_RATES], [CROSSOVER_RATES], and [POPULATION_SIZES] lists in [main.py] to change the grid search parameters.
 
+## Other methods
+- **Run gridsearch for the best method**:
+Switch branch to the `method_testing` branch. Run main.py to run the gridsearch for the best method.
+
+- **Run for a single run**:
+Uncomment the code at the bottom of the main method to run the algorithm for a single run.
+
 ## Example
 
 To run the algorithm with the `berlin52` dataset:
